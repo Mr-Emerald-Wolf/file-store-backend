@@ -26,7 +26,7 @@ clean:
 	$(DOCKER_COMPOSE) down -v
 
 migrate-up:
-	atlas schema apply  --url ${DB_URI} --file "internal/database/schema.sql" --dev-url "docker://postgres/latest/dev"
+	atlas schema apply  --url ${DB_URI} --file "database/schema.sql" --dev-url "docker://postgres/latest/dev"
 
 inspect-db:
 	atlas schema inspect -u ${DB_URI} 

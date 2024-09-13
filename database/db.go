@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/config"
-	"github.com/mr-emerald-wolf/21BCE0665_Backend/db"
+	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/db"
 )
 
 // Reusable SQLC 
