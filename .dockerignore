@@ -1,0 +1,23 @@
+# Ignore the binaries
+/bin
+/build
+/tmp
+
+# Ignore the vendor directory (if you're not using vendored dependencies)
+vendor/
+
+# Ignore git metadata
+.git
+.gitignore
+
+# Ignore IDE/editor config files
+*.DS_Store
+*.vscode/
+*.idea/
+
+# Ignore test files
+*_test.go
+
+# Ignore logs and temp files
+*.log
+*.tmp
