@@ -1,8 +1,11 @@
 # Define variables
+include .env
 DOCKER_COMPOSE = docker compose
 
+DB_URI = "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:6500/${POSTGRES_DB}?sslmode=disable"
+
 # Targets
-.PHONY: build up down logs restart clean 
+.PHONY: build up down logs restart clean migrate-up inspect-db
 
 build:
 	$(DOCKER_COMPOSE) up --build -d
@@ -21,6 +24,12 @@ restart:
 
 clean:
 	$(DOCKER_COMPOSE) down -v
+
+migrate-up:
+	atlas schema apply  --url ${DB_URI} --file "internal/database/schema.sql" --dev-url "docker://postgres/latest/dev"
+
+inspect-db:
+	atlas schema inspect -u ${DB_URI} 
 
 # Help target
 help:

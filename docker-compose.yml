@@ -2,10 +2,21 @@ version: '3'
 
 services:
 
+  postgres:
+    image: postgres:latest
+    ports:
+      - "6500:5432" 
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+      
   api:
     build: 
       context: .
       dockerfile: Dockerfile
     ports:
       - "80:8080"
-    
+
+volumes:
+  postgres_data:

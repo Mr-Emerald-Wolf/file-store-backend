@@ -21,3 +21,5 @@ vendor/
 # Ignore logs and temp files
 *.log
 *.tmp
+
+air.toml
