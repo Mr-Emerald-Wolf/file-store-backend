@@ -7,7 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/config"
-	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/database"
+	"github.com/mr-emerald-wolf/21BCE0665_Backend/database"
+	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/routes"
 )
 
 func init() {
@@ -21,14 +22,17 @@ func init() {
 }
 
 func main() {
-	r := gin.Default()
+	app := gin.Default()
 
-	r.GET("/ping", func(c *gin.Context) {
+	// Register Routes
+	routes.UserRoutes(app)
+
+	app.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
 
 	// Start the server
-	r.Run(":8080")
+	app.Run(":8080")
 }
