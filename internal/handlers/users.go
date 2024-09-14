@@ -1,15 +1,13 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mr-emerald-wolf/21BCE0665_Backend/database"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/db"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/models"
+	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/services"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/utils"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateUser(c *gin.Context) {
@@ -19,17 +17,10 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Hash Password
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(payload.Password), 10)
-	user := db.CreateUserParams{
-		Email:        payload.Email,
-		PasswordHash: string(hashedPassword),
-	}
+	err := services.CreateUser(payload)
 
-	// Create New User
-	_, err := database.DB.CreateUser(context.Background(), user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.HandleError(err))
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
 		return
 	}
 
@@ -46,30 +37,37 @@ func LoginUser(c *gin.Context) {
 		return
 	}
 
-	user, err := database.DB.GetUserByEmail(context.Background(), payload.Email)
+	access_token, err := services.LoginUser(payload)
+
 	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		c.JSON(http.StatusUnauthorized, utils.HandleError(err))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "login successful",
+		"access_token": access_token,
+	})
+}
+
+func GetUser(c *gin.Context) {
+
+	token, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(payload.Password))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"Error": "password does not match",
-		})
-		return
-	}
+	user, ok := token.(db.User)
 
-	// Generate New Access Token
-	access_token, err := utils.CreateToken(user.Email, utils.ACCESS_TOKEN)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.HandleError(err))
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "could not parse user"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":      "login successful",
-		"access_token": access_token,
+		"message":    "user found successfully",
+		"email":      user.Email,
+		"created_at": user.CreatedAt,
+		"updated_at": user.UpdatedAt,
 	})
 }
