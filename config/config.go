@@ -25,10 +25,17 @@ type RedisConfig struct {
 	REDIS_PASSWORD string `mapstructure:"REDIS_PASSWORD"`
 }
 
+type AWSConfig struct {
+    AccessKey string `mapstructure:"AWS_ACCESS_KEY_ID"`
+    SecretKey string `mapstructure:"AWS_SECRET_ACCESS_KEY"`
+    Region    string `mapstructure:"AWS_REGION"`
+}
+
 type Config struct {
 	HTTPConfig
 	DatabaseConfig
 	RedisConfig
+	AWSConfig
 }
 
 func LoadConfig() *Config {
@@ -50,6 +57,11 @@ func LoadConfig() *Config {
 			REDIS_PORT:     os.Getenv("REDIS_PORT"),
 			DB:             redisDB,
 			REDIS_PASSWORD: os.Getenv("REDIS_PASSWORD"),
+		},
+		AWSConfig : AWSConfig{
+			AccessKey: os.Getenv("AWS_ACCESS_KEY_ID"),
+			SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			Region:    os.Getenv("AWS_REGION"),
 		},
 	}
 }

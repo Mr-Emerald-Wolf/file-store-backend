@@ -9,6 +9,7 @@ import (
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/config"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/database"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/routes"
+	"github.com/mr-emerald-wolf/21BCE0665_Backend/s3handler"
 )
 
 func init() {
@@ -19,6 +20,7 @@ func init() {
 	config.CheckEnv()
 	cfg := config.LoadConfig()
 	database.InitDB(cfg.DatabaseConfig)
+	s3handler.InitializeS3Session(cfg.AWSConfig)
 }
 
 func main() {
@@ -26,6 +28,7 @@ func main() {
 
 	// Register Routes
 	routes.UserRoutes(app)
+	routes.FileRoutes(app)
 
 	app.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
