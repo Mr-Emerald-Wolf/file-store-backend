@@ -9,4 +9,5 @@ import (
 func FileRoutes(incomingRoutes *gin.Engine) {
 	fileRoutes := incomingRoutes.Group("/", middleware.VerifyAccessToken())
 	fileRoutes.POST("/upload", handlers.UploadFile)
+	fileRoutes.GET("/files", handlers.GetFiles)
 }

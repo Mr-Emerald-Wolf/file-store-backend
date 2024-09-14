@@ -21,7 +21,7 @@ func CreateUser(newUser models.CreateUserRequest) error {
 	} else if err == nil {
 		return fmt.Errorf("user already exists: %s", newUser.Email)
 	}
-	
+
 	// Hash Password
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(newUser.Password), 10)
 	user := db.CreateUserParams{
@@ -57,7 +57,6 @@ func LoginUser(loginRequest models.LoginUserRequest) (string, error) {
 	}
 
 	return access_token, nil
-
 }
 
 func FindUserByEmail(email string) (db.User, error) {

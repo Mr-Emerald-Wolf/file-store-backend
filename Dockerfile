@@ -11,6 +11,7 @@ RUN go build -o main ./cmd
 FROM alpine:3.18
 RUN apk update --no-cache && apk add --no-cache ca-certificates
 WORKDIR /app
+COPY .env .env
 COPY --from=build /app/main .
 EXPOSE 8080
 CMD ["./main"]

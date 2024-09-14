@@ -3,11 +3,12 @@ package services
 import (
 	"bytes"
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
-	"net/http"
 	"os"
 	"sort"
 	"strconv"
@@ -164,6 +165,22 @@ func UploadToS3(ctx context.Context, file multipart.File, filename string, userI
 	return s3Url, nil
 }
 
+func GetFilesByUserID(userID int32) (*[]db.File, error) {
+
+	// Get files by user id
+	files, err := database.DB.GetFilesByUserID(context.Background(), userID)
+
+	// Return error if no files exist
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("no files exist for this user")
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &files, nil
+
+}
+
 func cancelUpload(s3Client *s3.S3, uploadOutput *s3.CreateMultipartUploadOutput) {
 	_, err := s3Client.AbortMultipartUpload(&s3.AbortMultipartUploadInput{
 		Bucket:   uploadOutput.Bucket,
@@ -173,24 +190,4 @@ func cancelUpload(s3Client *s3.S3, uploadOutput *s3.CreateMultipartUploadOutput)
 	if err != nil {
 		log.Printf("failed to abort upload: %v", err)
 	}
-}
-
-func GetFileType(file multipart.File) (string, error) {
-	// Create a buffer to hold the first 512 bytes of the file
-	buffer := make([]byte, 512)
-
-	// Read the first 512 bytes of the file
-	_, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
-		return "", fmt.Errorf("failed to read file: %v", err)
-	}
-
-	// Reset file pointer to the beginning of the file
-	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return "", fmt.Errorf("failed to seek file: %v", err)
-	}
-
-	// Detect the content type
-	contentType := http.DetectContentType(buffer)
-	return contentType, nil
 }

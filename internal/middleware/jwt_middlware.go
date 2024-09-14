@@ -26,9 +26,8 @@ func VerifyAccessToken() gin.HandlerFunc {
 		if err != nil || !token.Valid {
 			fmt.Println("JWT error:", err.Error())
 
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status":  false,
-				"message": "Invalid or expired JWT",
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"Error": "Invalid or expired JWT",
 			})
 
 			c.Abort()

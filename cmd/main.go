@@ -20,6 +20,7 @@ func init() {
 	config.CheckEnv()
 	cfg := config.LoadConfig()
 	database.InitDB(cfg.DatabaseConfig)
+	database.NewRepository(cfg.RedisConfig)
 	s3handler.InitializeS3Session(cfg.AWSConfig)
 }
 

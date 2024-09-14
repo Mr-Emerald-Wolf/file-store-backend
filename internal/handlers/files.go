@@ -76,3 +76,33 @@ func UploadFile(c *gin.Context) {
 		"s3Url":   s3Url,
 	})
 }
+
+func GetFiles(c *gin.Context) {
+
+	// Parse JWT token
+	token, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	user, ok := token.(db.User)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "could not parse user"})
+		return
+	}
+
+	// Get files
+	files, err := services.GetFilesByUserID(user.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	// Return file metadata from db
+	c.JSON(http.StatusOK, gin.H{
+		"message": "all files metadata retrieved successfully",
+		"files":   files,
+	})
+}
