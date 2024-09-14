@@ -20,6 +20,14 @@ type File struct {
 	IsPublic     pgtype.Bool
 }
 
+type SharedFile struct {
+	ID       int32
+	UserID   int32
+	FileID   int32
+	S3Url    string
+	SharedAt pgtype.Timestamp
+}
+
 type User struct {
 	ID           int32
 	Uuid         pgtype.UUID

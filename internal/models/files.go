@@ -6,3 +6,7 @@ type CreateFileRequest struct {
 	FileType string
 	S3Url    string
 }
+
+type ShareFileRequest struct {
+	FileID int32 `uri:"file_id" binding:"required"`
+}

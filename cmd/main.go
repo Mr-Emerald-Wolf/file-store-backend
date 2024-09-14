@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/config"
+	cronjobs "github.com/mr-emerald-wolf/21BCE0665_Backend/cron_jobs"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/database"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/routes"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/s3handler"
@@ -30,6 +31,10 @@ func main() {
 	// Register Routes
 	routes.UserRoutes(app)
 	routes.FileRoutes(app)
+
+	// Start CronJobs
+	cronjobs.RunCronJobs()
+	defer cronjobs.StopCronJobs()
 
 	app.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{

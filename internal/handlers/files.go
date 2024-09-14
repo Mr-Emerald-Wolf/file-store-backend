@@ -106,3 +106,37 @@ func GetFiles(c *gin.Context) {
 		"files":   files,
 	})
 }
+
+func ShareFile(c *gin.Context) {
+	// Parse JWT token
+	token, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	user, ok := token.(db.User)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "could not parse user"})
+		return
+	}
+
+	var payload models.ShareFileRequest
+	if err := c.ShouldBindUri(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	publicUrl, err := services.ShareFile(payload.FileID, user.ID, user.Uuid)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.HandleError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "file shared successfully",
+		"public_url": publicUrl,
+	})
+}

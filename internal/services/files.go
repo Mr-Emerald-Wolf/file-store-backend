@@ -187,10 +187,10 @@ func GetFilesByUserID(userID int32) (*[]db.File, error) {
 
 	var cachedFiles []db.File
 	if err == nil {
-		// Cache hit, but we'll still fetch from DB
+		// Cache hit
 		err = json.Unmarshal([]byte(json_data), &cachedFiles)
 		if err != nil {
-			// Log the error, but continue to fetch from DB
+			// Log the error
 			log.Printf("Error unmarshaling cached data: %v", err)
 		} else {
 			log.Printf("Cache hit for key: %s", cacheKey)
@@ -231,4 +231,53 @@ func cancelUpload(s3Client *s3.S3, uploadOutput *s3.CreateMultipartUploadOutput)
 	if err != nil {
 		log.Printf("failed to abort upload: %v", err)
 	}
+}
+
+func ShareFile(fileID int32, userID int32, userUUID pgtype.UUID) (string, error) {
+
+	// Check if file is shared already
+	sharedFile, errr := database.DB.GetSharedFileByID(context.Background(), fileID)
+	if errr != nil && !errors.Is(errr, sql.ErrNoRows) {
+		return "", errr
+	} else if errr == nil {
+		return sharedFile.S3Url, nil
+	}
+
+	// Fetch file metadata from db
+	file, err := database.DB.GetFileByID(context.Background(), fileID)
+
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return "", fmt.Errorf("file does not exist")
+	} else if err != nil {
+		return "", err
+	}
+
+	// Generate Filename key
+	uuid := fmt.Sprintf("%x", userUUID.Bytes)
+	key := uuid + "/" + file.FileName
+
+	// Presign URL
+	req, _ := s3handler.S3Client.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(os.Getenv("AWS_BUCKET")),
+		Key:    aws.String(key),
+	})
+
+	presignedURL, err := req.Presign(30 * time.Minute)
+	if err != nil {
+		return "", err
+	}
+
+	// Save Shared File Details in DB
+	newSharedFile := db.CreateSharedFileParams{
+		UserID: userID,
+		FileID: file.ID,
+		S3Url:  presignedURL,
+	}
+
+	_, err = database.DB.CreateSharedFile(context.Background(), newSharedFile)
+	if err != nil {
+		return "", err
+	}
+
+	return presignedURL, nil
 }
