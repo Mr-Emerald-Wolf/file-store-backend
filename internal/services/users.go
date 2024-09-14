@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/database"
@@ -13,6 +15,13 @@ import (
 
 func CreateUser(newUser models.CreateUserRequest) error {
 
+	_, err := database.DB.GetUserByEmail(context.Background(), newUser.Email)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	} else if err == nil {
+		return fmt.Errorf("user already exists: %s", newUser.Email)
+	}
+	
 	// Hash Password
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(newUser.Password), 10)
 	user := db.CreateUserParams{
@@ -21,7 +30,7 @@ func CreateUser(newUser models.CreateUserRequest) error {
 	}
 
 	// Create New User
-	_, err := database.DB.CreateUser(context.Background(), user)
+	_, err = database.DB.CreateUser(context.Background(), user)
 	if err != nil {
 		return err
 	}
