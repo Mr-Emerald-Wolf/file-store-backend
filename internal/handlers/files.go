@@ -44,7 +44,7 @@ func UploadFile(c *gin.Context) {
 	defer cancel()
 
 	// Upload file in chunks
-	s3Url, err := services.UploadToS3(ctx, file, fileHeader.Filename, user.ID)
+	s3Url, err := services.UploadToS3(ctx, file, fileHeader.Filename, user.Uuid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.HandleError(err))
 		return

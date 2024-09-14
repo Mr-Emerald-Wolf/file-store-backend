@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/database"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/db"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/models"
@@ -24,7 +26,12 @@ func CreateUser(newUser models.CreateUserRequest) error {
 
 	// Hash Password
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(newUser.Password), 10)
+
 	user := db.CreateUserParams{
+		Uuid: pgtype.UUID{
+			Bytes: uuid.New(),
+			Valid: true,
+		},
 		Email:        newUser.Email,
 		PasswordHash: string(hashedPassword),
 	}
@@ -40,7 +47,10 @@ func CreateUser(newUser models.CreateUserRequest) error {
 func LoginUser(loginRequest models.LoginUserRequest) (string, error) {
 
 	user, err := database.DB.GetUserByEmail(context.Background(), loginRequest.Email)
-	if err != nil {
+
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return "", fmt.Errorf("user does not exist: %s", loginRequest.Email)
+	} else if err != nil {
 		return "", err
 	}
 

@@ -12,29 +12,25 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, password_hash)
-VALUES ($1, $2)
-RETURNING id, email, created_at, updated_at
+INSERT INTO users (uuid, email, password_hash)
+VALUES ($1, $2, $3)
+RETURNING id, uuid, email, password_hash, created_at, updated_at
 `
 
 type CreateUserParams struct {
+	Uuid         pgtype.UUID
 	Email        string
 	PasswordHash string
 }
 
-type CreateUserRow struct {
-	ID        int32
-	Email     string
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.PasswordHash)
-	var i CreateUserRow
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser, arg.Uuid, arg.Email, arg.PasswordHash)
+	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Uuid,
 		&i.Email,
+		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -52,7 +48,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, created_at, updated_at
+SELECT id, uuid, email, password_hash, created_at, updated_at
 FROM users
 WHERE email = $1
 `
@@ -62,6 +58,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Uuid,
 		&i.Email,
 		&i.PasswordHash,
 		&i.CreatedAt,
@@ -71,7 +68,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, created_at, updated_at
+SELECT id, uuid, email, password_hash, created_at, updated_at
 FROM users
 WHERE id = $1
 `
@@ -81,6 +78,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Uuid,
 		&i.Email,
 		&i.PasswordHash,
 		&i.CreatedAt,
@@ -93,7 +91,7 @@ const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET email = $1, password_hash = $2, updated_at = NOW()
 WHERE id = $3
-RETURNING id, email, password_hash, created_at, updated_at
+RETURNING id, uuid, email, password_hash, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -107,6 +105,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Uuid,
 		&i.Email,
 		&i.PasswordHash,
 		&i.CreatedAt,

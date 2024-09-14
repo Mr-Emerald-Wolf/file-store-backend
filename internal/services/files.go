@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -21,6 +23,7 @@ import (
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/db"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/models"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/s3handler"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -52,12 +55,19 @@ func CreateFileMetaData(newFile models.CreateFileRequest, userID int32) error {
 	if err != nil {
 		return err
 	}
+
+	// Invalidate file metadata cache
+	cacheKey := "user:" + strconv.Itoa(int(userID))
+	go database.RedisClient.Delete(cacheKey)
+
 	return nil
 }
 
-func UploadToS3(ctx context.Context, file multipart.File, filename string, userID int32) (string, error) {
+func UploadToS3(ctx context.Context, file multipart.File, filename string, userUUID pgtype.UUID) (string, error) {
 	// Generate Filename key
-	key := strconv.Itoa(int(userID)) + "/" + filename
+	uuid := fmt.Sprintf("%x", userUUID.Bytes)
+	key := uuid + "/" + filename
+
 	// Initiate multipart upload
 	uploadInput := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(os.Getenv("AWS_BUCKET")),
@@ -167,6 +177,27 @@ func UploadToS3(ctx context.Context, file multipart.File, filename string, userI
 
 func GetFilesByUserID(userID int32) (*[]db.File, error) {
 
+	// Check redis for cached response
+	cacheKey := "user:" + strconv.Itoa(int(userID))
+	json_data, err := database.RedisClient.Get(cacheKey)
+
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+
+	var cachedFiles []db.File
+	if err == nil {
+		// Cache hit, but we'll still fetch from DB
+		err = json.Unmarshal([]byte(json_data), &cachedFiles)
+		if err != nil {
+			// Log the error, but continue to fetch from DB
+			log.Printf("Error unmarshaling cached data: %v", err)
+		} else {
+			log.Printf("Cache hit for key: %s", cacheKey)
+			return &cachedFiles, nil
+		}
+	}
+
 	// Get files by user id
 	files, err := database.DB.GetFilesByUserID(context.Background(), userID)
 
@@ -177,8 +208,18 @@ func GetFilesByUserID(userID int32) (*[]db.File, error) {
 		return nil, err
 	}
 
-	return &files, nil
+	// Cache result in redis
+	fileJSON, err := json.Marshal(files)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling file: %w", err)
+	}
 
+	err = database.RedisClient.Set(cacheKey, string(fileJSON), time.Minute*5)
+	if err != nil {
+		return nil, fmt.Errorf("error caching file in Redis: %w", err)
+	}
+	log.Printf("Cached result in redis: %s", cacheKey)
+	return &files, nil
 }
 
 func cancelUpload(s3Client *s3.S3, uploadOutput *s3.CreateMultipartUploadOutput) {

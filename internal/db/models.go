@@ -22,6 +22,7 @@ type File struct {
 
 type User struct {
 	ID           int32
+	Uuid         pgtype.UUID
 	Email        string
 	PasswordHash string
 	CreatedAt    pgtype.Timestamp
