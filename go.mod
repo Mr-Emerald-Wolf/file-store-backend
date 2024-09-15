@@ -4,6 +4,7 @@ go 1.21.5
 
 require (
 	github.com/aws/aws-sdk-go v1.55.5
+	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-co-op/gocron/v2 v2.11.0
 	github.com/go-playground/validator v9.31.0+incompatible

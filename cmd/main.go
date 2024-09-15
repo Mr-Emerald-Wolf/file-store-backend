@@ -3,7 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/config"
@@ -31,6 +33,11 @@ func main() {
 
 	// Apply the rate limiter middleware globally
 	app.Use(middleware.RateLimiter())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Register Routes
 	routes.UserRoutes(app)
