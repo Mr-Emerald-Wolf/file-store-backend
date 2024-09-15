@@ -67,6 +67,11 @@ This project is a backend service for a file-sharing platform that allows users 
 - **Migrations**:
   - Managed using Atlas/Go for schema migrations and versioning.
 
+- **Schema**: Defined in `database/schema.sql`, which includes tables for users, files, and shared files. Indexes are created for efficient searching.
+
+- **Queries**: Stored in `database/queries`.
+
+
 ### 7. Background Job for File Deletion
 
 - **Scheduled Tasks**:
@@ -152,6 +157,18 @@ AWS_BUCKET=file-upload-trademarkia-bucket
    docker compose up -d --build
    ```
 
+
+4. **Run Migrations using Atlas/Go**
+
+    After running `docker compose up`, apply the database schema using the following command:
+
+    ```sh
+    atlas schema apply --url postgres://admin:password123@localhost:6500/file_management_system?sslmode=disable \
+    --file "database/schema.sql" --dev-url "docker://postgres/latest/dev"
+    ```
+
+    This command ensures that the database schema is applied correctly to your PostgreSQL instance.
+ 
 ## Postman Documentation
 
 Detailed API documentation is available via Postman:
