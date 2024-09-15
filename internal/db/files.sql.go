@@ -120,6 +120,127 @@ func (q *Queries) GetFilesByUserID(ctx context.Context, userID int32) ([]File, e
 	return items, nil
 }
 
+const searchFilesByDate = `-- name: SearchFilesByDate :many
+SELECT id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_accessed, is_public FROM files
+WHERE user_id = $1 AND upload_date BETWEEN $2 AND $3
+`
+
+type SearchFilesByDateParams struct {
+	UserID       int32
+	UploadDate   pgtype.Timestamp
+	UploadDate_2 pgtype.Timestamp
+}
+
+func (q *Queries) SearchFilesByDate(ctx context.Context, arg SearchFilesByDateParams) ([]File, error) {
+	rows, err := q.db.Query(ctx, searchFilesByDate, arg.UserID, arg.UploadDate, arg.UploadDate_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []File
+	for rows.Next() {
+		var i File
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.FileName,
+			&i.S3Url,
+			&i.FileSize,
+			&i.FileType,
+			&i.UploadDate,
+			&i.LastAccessed,
+			&i.IsPublic,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchFilesByName = `-- name: SearchFilesByName :many
+SELECT id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_accessed, is_public FROM files
+WHERE user_id = $1 AND file_name ILIKE '%' || $2 || '%'
+`
+
+type SearchFilesByNameParams struct {
+	UserID  int32
+	Column2 pgtype.Text
+}
+
+func (q *Queries) SearchFilesByName(ctx context.Context, arg SearchFilesByNameParams) ([]File, error) {
+	rows, err := q.db.Query(ctx, searchFilesByName, arg.UserID, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []File
+	for rows.Next() {
+		var i File
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.FileName,
+			&i.S3Url,
+			&i.FileSize,
+			&i.FileType,
+			&i.UploadDate,
+			&i.LastAccessed,
+			&i.IsPublic,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchFilesByType = `-- name: SearchFilesByType :many
+SELECT id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_accessed, is_public FROM files
+WHERE user_id = $1 AND file_type ILIKE '%' || $2 || '%'
+`
+
+type SearchFilesByTypeParams struct {
+	UserID  int32
+	Column2 pgtype.Text
+}
+
+func (q *Queries) SearchFilesByType(ctx context.Context, arg SearchFilesByTypeParams) ([]File, error) {
+	rows, err := q.db.Query(ctx, searchFilesByType, arg.UserID, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []File
+	for rows.Next() {
+		var i File
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.FileName,
+			&i.S3Url,
+			&i.FileSize,
+			&i.FileType,
+			&i.UploadDate,
+			&i.LastAccessed,
+			&i.IsPublic,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateFile = `-- name: UpdateFile :one
 UPDATE files
 SET file_name = $1, s3_url = $2, file_size = $3, file_type = $4, is_public = $5, last_accessed = NOW()

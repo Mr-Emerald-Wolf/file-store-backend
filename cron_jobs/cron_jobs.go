@@ -19,7 +19,7 @@ func RunCronJobs() {
 
 	// Delete Expired Shared Files every 10 Minutes
 	_, err = scheduler.NewJob(
-		gocron.CronJob("*/1 * * * *", false),
+		gocron.CronJob("*/10 * * * *", false),
 		gocron.NewTask(utils.DeleteExpiredSharedFiles),
 	)
 	if err != nil {

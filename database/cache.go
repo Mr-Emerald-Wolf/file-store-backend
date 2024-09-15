@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -19,8 +18,9 @@ var RedisClient *RedisRepository
 func NewRepository(redisConfig config.RedisConfig) {
 
 	client := redis.NewClient(&redis.Options{
-		Addr: fmt.Sprintf("%s:%s", redisConfig.REDIS_HOST, redisConfig.REDIS_PORT),
-		DB:   0,
+		Addr:     redisConfig.REDIS_HOST,
+		Password: redisConfig.REDIS_PASSWORD,
+		DB:       0,
 	})
 
 	// Verify the connection to Redis

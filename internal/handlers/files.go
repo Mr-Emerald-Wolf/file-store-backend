@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/db"
@@ -138,5 +139,68 @@ func ShareFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message":    "file shared successfully",
 		"public_url": publicUrl,
+	})
+}
+
+func SearchFile(c *gin.Context) {
+	// Parse JWT token
+	token, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	user, ok := token.(db.User)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "could not parse user"})
+		return
+	}
+
+	fileName := c.Query("file_name")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+	fileType := c.Query("file_type")
+
+	// Parse Date if Given
+	var parsedStartDate, parsedEndDate *time.Time
+	if startDate != "" && endDate != "" {
+		start, err := time.Parse("2006-01-02", startDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date"})
+			return
+		}
+		end, err := time.Parse("2006-01-02", endDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date"})
+			return
+		}
+		parsedStartDate = &start
+		parsedEndDate = &end
+	}
+
+	var files *[]db.File
+	var err error
+
+	switch {
+	case fileName != "":
+		files, err = services.SearchFileByName(fileName, user.ID)
+	case parsedStartDate != nil && parsedEndDate != nil:
+		files, err = services.SearchFileByDate(*parsedStartDate, *parsedEndDate, user.ID)
+	case fileType != "":
+		files, err = services.SearchFileByType(fileType, user.ID)
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "At least one search parameter (file_name, start_date/end_date, file_type) must be provided"})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "files found successfully",
+		"files":   files,
 	})
 }

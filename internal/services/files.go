@@ -281,3 +281,178 @@ func ShareFile(fileID int32, userID int32, userUUID pgtype.UUID) (string, error)
 
 	return presignedURL, nil
 }
+
+func SearchFileByName(fileName string, userID int32) (*[]db.File, error) {
+	// Check redis for cached response
+	cacheKey := "user:" + strconv.Itoa(int(userID)) + ":" + fileName
+	json_data, err := database.RedisClient.Get(cacheKey)
+
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+
+	var cachedFiles []db.File
+	if err == nil {
+		// Cache hit
+		err = json.Unmarshal([]byte(json_data), &cachedFiles)
+		if err != nil {
+			// Log the error
+			log.Printf("Error unmarshaling cached data: %v", err)
+		} else {
+			log.Printf("Cache hit for key: %s", cacheKey)
+			return &cachedFiles, nil
+		}
+	}
+
+	// Get files by user id
+	searchParams := db.SearchFilesByNameParams{
+		UserID: userID,
+		Column2: pgtype.Text{
+			String: fileName,
+			Valid:  true,
+		},
+	}
+	files, err := database.DB.SearchFilesByName(context.Background(), searchParams)
+
+	// Return error if no files exist
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("no files exist for this filename")
+	} else if err != nil {
+		return nil, err
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no files exist for this filename")
+	}
+
+	// Cache result in redis
+	fileJSON, err := json.Marshal(files)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling file: %w", err)
+	}
+
+	err = database.RedisClient.Set(cacheKey, string(fileJSON), time.Minute*1)
+	if err != nil {
+		return nil, fmt.Errorf("error caching file in Redis: %w", err)
+	}
+	log.Printf("Cached result in redis: %s", cacheKey)
+	return &files, nil
+}
+
+func SearchFileByType(fileType string, userID int32) (*[]db.File, error) {
+	// Check redis for cached response
+	cacheKey := "user:" + strconv.Itoa(int(userID)) + ":" + fileType
+	json_data, err := database.RedisClient.Get(cacheKey)
+
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+
+	var cachedFiles []db.File
+	if err == nil {
+		// Cache hit
+		err = json.Unmarshal([]byte(json_data), &cachedFiles)
+		if err != nil {
+			// Log the error
+			log.Printf("Error unmarshaling cached data: %v", err)
+		} else {
+			log.Printf("Cache hit for key: %s", cacheKey)
+			return &cachedFiles, nil
+		}
+	}
+
+	// Get files by user id
+	searchParams := db.SearchFilesByTypeParams{
+		UserID: userID,
+		Column2: pgtype.Text{
+			String: fileType,
+			Valid:  true,
+		},
+	}
+	files, err := database.DB.SearchFilesByType(context.Background(), searchParams)
+
+	// Return error if no files exist
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("no files exist for this filetype")
+	} else if err != nil {
+		return nil, err
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no files exist for this filetype")
+	}
+
+	// Cache result in redis
+	fileJSON, err := json.Marshal(files)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling file: %w", err)
+	}
+
+	err = database.RedisClient.Set(cacheKey, string(fileJSON), time.Minute*1)
+	if err != nil {
+		return nil, fmt.Errorf("error caching file in Redis: %w", err)
+	}
+	log.Printf("Cached result in redis: %s", cacheKey)
+	return &files, nil
+}
+
+func SearchFileByDate(startDate, endDate time.Time, userID int32) (*[]db.File, error) {
+	// Check redis for cached response
+	cacheKey := "user:" + strconv.Itoa(int(userID)) + ":" + startDate.String() + ":" + endDate.String()
+	json_data, err := database.RedisClient.Get(cacheKey)
+
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+
+	var cachedFiles []db.File
+	if err == nil {
+		// Cache hit
+		err = json.Unmarshal([]byte(json_data), &cachedFiles)
+		if err != nil {
+			// Log the error
+			log.Printf("Error unmarshaling cached data: %v", err)
+		} else {
+			log.Printf("Cache hit for key: %s", cacheKey)
+			return &cachedFiles, nil
+		}
+	}
+
+	// Get files by user id
+	searchParams := db.SearchFilesByDateParams{
+		UserID: userID,
+		UploadDate: pgtype.Timestamp{
+			Time:  startDate,
+			Valid: true,
+		},
+		UploadDate_2: pgtype.Timestamp{
+			Time:  endDate,
+			Valid: true,
+		},
+	}
+	files, err := database.DB.SearchFilesByDate(context.Background(), searchParams)
+
+	// Return error if no files exist
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("no files exist for this date range")
+	} else if err != nil {
+		return nil, err
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no files exist for this date range")
+	}
+
+	// Cache result in redis
+	fileJSON, err := json.Marshal(files)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling file: %w", err)
+	}
+
+	err = database.RedisClient.Set(cacheKey, string(fileJSON), time.Minute*1)
+	if err != nil {
+		return nil, fmt.Errorf("error caching file in Redis: %w", err)
+	}
+	log.Printf("Cached result in redis: %s", cacheKey)
+	return &files, nil
+}
