@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/db"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/models"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/services"
@@ -14,6 +15,13 @@ func CreateUser(c *gin.Context) {
 	var payload models.CreateUserRequest
 	if err := c.Bind(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+	
+	validator := validator.New()
+
+	if err := validator.Struct(payload); err != nil {
+		c.JSON(http.StatusNotAcceptable, gin.H{"message": "Please pass in all the required fields", "error": err.Error()})
 		return
 	}
 
@@ -34,6 +42,13 @@ func LoginUser(c *gin.Context) {
 	var payload models.LoginUserRequest
 	if err := c.Bind(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	validator := validator.New()
+
+	if err := validator.Struct(payload); err != nil {
+		c.JSON(http.StatusNotAcceptable, gin.H{"message": "Please pass in all the required fields", "error": err.Error()})
 		return
 	}
 

@@ -1,0 +1,25 @@
+name: Build and Deploy to Server
+
+on:
+  push:
+    branches:
+      - main # Adjust the branch as needed
+
+jobs:
+
+  deploy-to-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd 21BCE0665_Backend/
+            git pull origin main 
+            sudo docker compose down 
+            sudo docker compose up -d --build
