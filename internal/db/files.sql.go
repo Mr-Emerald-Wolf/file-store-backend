@@ -52,11 +52,16 @@ func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (File, e
 
 const deleteFile = `-- name: DeleteFile :exec
 DELETE FROM files
-WHERE id = $1
+WHERE id = $1 AND user_id = $2
 `
 
-func (q *Queries) DeleteFile(ctx context.Context, id int32) error {
-	_, err := q.db.Exec(ctx, deleteFile, id)
+type DeleteFileParams struct {
+	ID     int32
+	UserID int32
+}
+
+func (q *Queries) DeleteFile(ctx context.Context, arg DeleteFileParams) error {
+	_, err := q.db.Exec(ctx, deleteFile, arg.ID, arg.UserID)
 	return err
 }
 
@@ -68,6 +73,29 @@ WHERE id = $1
 
 func (q *Queries) GetFileByID(ctx context.Context, id int32) (File, error) {
 	row := q.db.QueryRow(ctx, getFileByID, id)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.FileName,
+		&i.S3Url,
+		&i.FileSize,
+		&i.FileType,
+		&i.UploadDate,
+		&i.LastAccessed,
+		&i.IsPublic,
+	)
+	return i, err
+}
+
+const getFileByName = `-- name: GetFileByName :one
+SELECT id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_accessed, is_public
+FROM files
+WHERE file_name = $1
+`
+
+func (q *Queries) GetFileByName(ctx context.Context, fileName string) (File, error) {
+	row := q.db.QueryRow(ctx, getFileByName, fileName)
 	var i File
 	err := row.Scan(
 		&i.ID,
@@ -243,29 +271,19 @@ func (q *Queries) SearchFilesByType(ctx context.Context, arg SearchFilesByTypePa
 
 const updateFile = `-- name: UpdateFile :one
 UPDATE files
-SET file_name = $1, s3_url = $2, file_size = $3, file_type = $4, is_public = $5, last_accessed = NOW()
-WHERE id = $6
+SET file_name = $1, last_accessed = NOW()
+WHERE id = $2 AND user_id = $3
 RETURNING id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_accessed, is_public
 `
 
 type UpdateFileParams struct {
 	FileName string
-	S3Url    pgtype.Text
-	FileSize int64
-	FileType pgtype.Text
-	IsPublic pgtype.Bool
 	ID       int32
+	UserID   int32
 }
 
 func (q *Queries) UpdateFile(ctx context.Context, arg UpdateFileParams) (File, error) {
-	row := q.db.QueryRow(ctx, updateFile,
-		arg.FileName,
-		arg.S3Url,
-		arg.FileSize,
-		arg.FileType,
-		arg.IsPublic,
-		arg.ID,
-	)
+	row := q.db.QueryRow(ctx, updateFile, arg.FileName, arg.ID, arg.UserID)
 	var i File
 	err := row.Scan(
 		&i.ID,

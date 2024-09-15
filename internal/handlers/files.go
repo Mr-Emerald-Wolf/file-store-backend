@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -44,6 +45,18 @@ func UploadFile(c *gin.Context) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	existingFile, err := services.CheckIfFileExists(fileHeader.Filename, user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.HandleError(err))
+		return
+	}
+	if file != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "File already exists",
+			"s3Url":   existingFile.S3Url.String,
+		})
+		return
+	}
 	// Upload file in chunks
 	s3Url, err := services.UploadToS3(ctx, file, fileHeader.Filename, user.Uuid)
 	if err != nil {
@@ -202,5 +215,81 @@ func SearchFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "files found successfully",
 		"files":   files,
+	})
+}
+
+func UpdateFile(c *gin.Context) {
+
+	token, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	user, ok := token.(db.User)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "could not parse user"})
+		return
+	}
+
+	var file_id models.ShareFileRequest
+	if err := c.ShouldBindUri(&file_id); err != nil {
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	var payload models.UpdateFileName
+	if err := c.Bind(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	if payload.FileName == "" {
+		c.JSON(http.StatusBadRequest, utils.HandleError(fmt.Errorf("filename cannot be empty")))
+		return
+	}
+
+	err := services.UpdateFileMetaData(payload.FileName, file_id.FileID, user.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "File updated successfully",
+		"New File": payload.FileName,
+	})
+}
+
+func DeleteFile(c *gin.Context) {
+
+	token, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	user, ok := token.(db.User)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "could not parse user"})
+		return
+	}
+
+	var file_id models.DeleteFileRequest
+	if err := c.ShouldBindUri(&file_id); err != nil {
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	err := services.DeleteFileMetaData(file_id.FileID, user.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.HandleError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "File deleted successfully",
 	})
 }

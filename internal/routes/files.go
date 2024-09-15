@@ -12,4 +12,6 @@ func FileRoutes(incomingRoutes *gin.Engine) {
 	fileRoutes.GET("/files", handlers.GetFiles)
 	fileRoutes.GET("/search", handlers.SearchFile)
 	fileRoutes.GET("/share/:file_id", handlers.ShareFile)
+	fileRoutes.PATCH("/update/:file_id", handlers.UpdateFile)
+	fileRoutes.DELETE("/delete/:file_id", handlers.DeleteFile)
 }

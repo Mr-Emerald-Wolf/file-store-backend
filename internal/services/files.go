@@ -222,6 +222,17 @@ func GetFilesByUserID(userID int32) (*[]db.File, error) {
 	return &files, nil
 }
 
+func CheckIfFileExists(fileName string, userID int32) (*db.File, error) {
+	file, err := database.DB.GetFileByName(context.Background(), fileName)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &file, nil
+}
+
 func cancelUpload(s3Client *s3.S3, uploadOutput *s3.CreateMultipartUploadOutput) {
 	_, err := s3Client.AbortMultipartUpload(&s3.AbortMultipartUploadInput{
 		Bucket:   uploadOutput.Bucket,
@@ -455,4 +466,51 @@ func SearchFileByDate(startDate, endDate time.Time, userID int32) (*[]db.File, e
 	}
 	log.Printf("Cached result in redis: %s", cacheKey)
 	return &files, nil
+}
+
+func UpdateFileMetaData(fileName string, fileID int32, userID int32) error {
+
+	// Check if file exists
+	_, err := database.DB.GetFileByID(context.Background(), fileID)
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("file does not exist")
+	} else if err != nil {
+		return err
+	}
+
+	update := db.UpdateFileParams{
+		FileName: fileName,
+		ID:       fileID,
+		UserID:   userID,
+	}
+	_, err = database.DB.UpdateFile(context.Background(), update)
+
+	// Invalidate file metadata cache
+	cacheKey := "user:" + strconv.Itoa(int(userID))
+	go database.RedisClient.Delete(cacheKey)
+
+	return err
+}
+
+func DeleteFileMetaData(fileID int32, userID int32) error {
+
+	// Check if file exists
+	_, err := database.DB.GetFileByID(context.Background(), fileID)
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("file does not exist")
+	} else if err != nil {
+		return err
+	}
+
+	delete := db.DeleteFileParams{
+		ID:     fileID,
+		UserID: userID,
+	}
+	err = database.DB.DeleteFile(context.Background(), delete)
+
+	// Invalidate file metadata cache
+	cacheKey := "user:" + strconv.Itoa(int(userID))
+	go database.RedisClient.Delete(cacheKey)
+
+	return err
 }

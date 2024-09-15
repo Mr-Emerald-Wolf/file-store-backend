@@ -9,6 +9,7 @@ import (
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/config"
 	cronjobs "github.com/mr-emerald-wolf/21BCE0665_Backend/cron_jobs"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/database"
+	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/middleware"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/internal/routes"
 	"github.com/mr-emerald-wolf/21BCE0665_Backend/s3handler"
 )
@@ -27,6 +28,9 @@ func init() {
 
 func main() {
 	app := gin.Default()
+
+	// Apply the rate limiter middleware globally
+	app.Use(middleware.RateLimiter())
 
 	// Register Routes
 	routes.UserRoutes(app)

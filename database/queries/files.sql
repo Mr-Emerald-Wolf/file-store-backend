@@ -8,6 +8,11 @@ SELECT id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_a
 FROM files
 WHERE id = $1;
 
+-- name: GetFileByName :one
+SELECT id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_accessed, is_public
+FROM files
+WHERE file_name = $1;
+
 -- name: GetFilesByUserID :many
 SELECT id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_accessed, is_public
 FROM files
@@ -16,8 +21,8 @@ ORDER BY upload_date DESC;
 
 -- name: UpdateFile :one
 UPDATE files
-SET file_name = $1, s3_url = $2, file_size = $3, file_type = $4, is_public = $5, last_accessed = NOW()
-WHERE id = $6
+SET file_name = $1, last_accessed = NOW()
+WHERE id = $2 AND user_id = $3
 RETURNING *;
 
 -- name: SearchFilesByName :many
@@ -34,4 +39,4 @@ WHERE user_id = $1 AND file_type ILIKE '%' || $2 || '%';
 
 -- name: DeleteFile :exec
 DELETE FROM files
-WHERE id = $1;
+WHERE id = $1 AND user_id = $2;
