@@ -50,10 +50,10 @@ func UploadFile(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.HandleError(err))
 		return
 	}
-	if file != nil {
+	if existingFile != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "File already exists",
-			"s3Url":   existingFile.S3Url.String,
+			"s3Url":   existingFile.S3Url,
 		})
 		return
 	}
