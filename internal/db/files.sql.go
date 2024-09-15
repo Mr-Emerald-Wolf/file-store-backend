@@ -65,6 +65,16 @@ func (q *Queries) DeleteFile(ctx context.Context, arg DeleteFileParams) error {
 	return err
 }
 
+const deleteOldFiles = `-- name: DeleteOldFiles :exec
+DELETE FROM files
+WHERE created_at < NOW() - INTERVAL '30 days'
+`
+
+func (q *Queries) DeleteOldFiles(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteOldFiles)
+	return err
+}
+
 const getFileByID = `-- name: GetFileByID :one
 SELECT id, user_id, file_name, s3_url, file_size, file_type, upload_date, last_accessed, is_public
 FROM files

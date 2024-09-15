@@ -13,5 +13,6 @@ func DeleteExpiredSharedFiles() {
 }
 
 func DeleteExpiredFiles() {
+	database.DB.DeleteOldFiles(context.Background())
 	log.Print("Deleting expired s3 files")
 }

@@ -40,3 +40,7 @@ WHERE user_id = $1 AND file_type ILIKE '%' || $2 || '%';
 -- name: DeleteFile :exec
 DELETE FROM files
 WHERE id = $1 AND user_id = $2;
+
+-- name: DeleteOldFiles :exec
+DELETE FROM files
+WHERE created_at < NOW() - INTERVAL '30 days';

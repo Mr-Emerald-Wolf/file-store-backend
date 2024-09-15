@@ -26,3 +26,15 @@ CREATE TABLE shared_files (
     s3_url VARCHAR(1024) NOT NULL,
     shared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add an index on user_id and file_name for efficient searching by file name
+CREATE INDEX idx_files_user_id_file_name
+ON files (user_id, file_name);
+
+-- Add an index on user_id and upload_date for efficient searching by upload date
+CREATE INDEX idx_files_user_id_upload_date
+ON files (user_id, upload_date);
+
+-- Add an index on user_id and file_type for efficient searching by file type
+CREATE INDEX idx_files_user_id_file_type
+ON files (user_id, file_type);
