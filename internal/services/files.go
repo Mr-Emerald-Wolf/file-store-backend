@@ -208,6 +208,10 @@ func GetFilesByUserID(userID int32) (*[]db.File, error) {
 		return nil, err
 	}
 
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no files exist for this user")
+	}
+
 	// Cache result in redis
 	fileJSON, err := json.Marshal(files)
 	if err != nil {
