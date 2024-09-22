@@ -136,7 +136,7 @@ REDIS_DB=0
 AWS_ACCESS_KEY_ID=<your_aws_access_key_id>
 AWS_SECRET_ACCESS_KEY=<your_aws_secret_access_key>
 AWS_REGION=ap-south-1
-AWS_BUCKET=file-upload-trademarkia-bucket
+AWS_BUCKET=file-upload-bucket
 ```
 
 ## Running the Project
@@ -207,7 +207,7 @@ The project follows a layered architecture to organize code and separate concern
 - [x] Background Job for File Deletion
 - [x] Testing
 
-### Bonus Tasks (Optional)
+### Future Tasks (Optional)
 
 - [ ] WebSocket for Real-Time File Upload Notifications
 - [ ] File Encryption
